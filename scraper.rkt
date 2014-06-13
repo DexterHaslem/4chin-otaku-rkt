@@ -41,5 +41,4 @@
       'bad-thread))
 
 ;;http://a.4cdn.org/gif/catalog.json
-
-(define anime (fetch-catalog "a"))
+;(define anime (fetch-catalog "a"))
