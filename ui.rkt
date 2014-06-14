@@ -1,4 +1,6 @@
 #lang racket/gui
+(require "4chan-api.rkt")
+
 (define frame (new frame% 
                    [label "debug"]
                    [width 300]
@@ -21,7 +23,7 @@
 (define choice (new choice%
                     [label "Board"]
                     [parent frame]
-                    [choices (list "a" "b" "c" "d" "e" "f" "g" "gif" "h" "hr")]))
+                    [choices (map [lambda (b) (board-title b)] (get-boards))]))
 
 (define fetch-button (new button% 
                           [parent frame] 
