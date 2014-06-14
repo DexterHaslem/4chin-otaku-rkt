@@ -43,7 +43,7 @@
 (struct board (name title) #:transparent)
 
 (define (board->string b)
-  (format "~a: ~a" (board-name b) (board-title b)))
+  (format "~a / ~a" (board-name b) (board-title b)))
 
 (define (fetch-boards-json)
   (get-url-json "http://a.4cdn.org/boards.json"))

@@ -1,3 +1,6 @@
-Compiled/*
+compiled/*
+src/compiled/*
 *.bak
 *.1
+*.dep
+*.zo
