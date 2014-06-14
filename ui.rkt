@@ -23,7 +23,7 @@
 (define choice (new choice%
                     [label "Board"]
                     [parent frame]
-                    [choices (map [lambda (b) (board-title b)] (get-boards))]))
+                    [choices (map [lambda (b) (board->string b)] (get-boards))]))
 
 (define fetch-button (new button% 
                           [parent frame] 

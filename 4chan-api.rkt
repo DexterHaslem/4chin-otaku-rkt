@@ -3,7 +3,7 @@
 (require net/url)
 (require json)
 
-(provide get-boards board board-title board-name)
+(provide get-boards board board->string)
 
 (define (get-url-json url)
   (string->jsexpr (port->string (get-pure-port (string->url url)))))
@@ -39,9 +39,11 @@
       (thread-json->thread thread-hash)
       'bad-thread))
 
-
 ;;http://a.4cdn.org/boards.json
 (struct board (name title) #:transparent)
+
+(define (board->string b)
+  (format "~a: ~a" (board-name b) (board-title b)))
 
 (define (fetch-boards-json)
   (get-url-json "http://a.4cdn.org/boards.json"))
