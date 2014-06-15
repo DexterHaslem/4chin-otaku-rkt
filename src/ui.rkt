@@ -45,18 +45,19 @@
                     [callback (lambda (c e)
                                 ;(define selected-board (first (string-split (send choice get-selection) ":")))
                                 (set! selected-board (list-ref available-boards (send choice get-selection)))
-                                (printf "selected= ~a~n" (send choice get-selection)))]))
-
-(define (debug-print-catalog lst)
-  (send text insert (format "got ~a pages:~n" [length lst]))
-  (map (lambda (p)
-         (send text insert (format "~a threads~n"  (length p)))
-         ) lst))
+                                ;(printf "selected= ~a~n" (send choice get-selection))
+                                )]))
  
 (define (on-fetch-threads button event)
   (send text insert (format "getting threads for board \"~a\" ...~n" (board->string selected-board)))
-  (define selected-board-catalog (get-board-catalog-list selected-board))
-  (debug-print-catalog selected-board-catalog))
+  ; removed catalog crap - way more verbose thread info than needed
+  ; using the get-board-threads api is much faster since it just returns thread no and last modified
+  (define board-threads (get-board-threads selected-board))
+  (send text insert (format "got ~a threads~n" [length board-threads]))
+  (map (lambda (b)
+         (send text insert [board-thread->string b])
+         (send text insert "\n"))
+       board-threads))
 
 (define fetch-button (new button% 
                           [callback on-fetch-threads]
