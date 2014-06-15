@@ -1,18 +1,25 @@
 #lang racket/gui
 
+; debug ui, will likely change to something better once it actuall works 
+
 (require "4chan-api.rkt")
+(require "file.rkt")
 
 ; vars
+(define file-extensions '(".jpg" ".gif" ".swf" ".webm" "*.*"))
 (define available-boards (get-boards))
+
 (define selected-board (first available-boards))
-(define file-list empty)
+(define selected-ext (first file-extensions))
+(define posts empty)
+(define filtered-posts empty)
 
 ; ui
 
 (define frame (new frame% 
                    [label "debug ui"]
-                   [width 500]
-                   [height 400]))
+                   [width 400]
+                   [height 350]))
 
 ; menu
 (define (on-menu-quit o c)
@@ -32,7 +39,7 @@
 
 (define debug-editor (new editor-canvas% 
                       [parent main-panel]
-                      [min-height 300]
+                      [min-height 265]
                       [label "f"]))
 
 (define text (new text%));text%))
@@ -41,30 +48,74 @@
 (define choice-panel (new horizontal-panel% 
                           [parent main-panel]
                           [alignment '(left top)]
-                          [horiz-margin 5]))
+                          [horiz-margin 5]
+                          [min-height 35]))
 
-(define choice (new choice%
+(define board-choice (new choice%
                     [label "Board "]
                     [parent choice-panel]
-                    ;[vert-margin 10]
+                    [min-height 30]
                     [choices (map [lambda (b) (board->string b)] available-boards)]
                     [callback (lambda (c e)
-                                (set! selected-board [list-ref available-boards (send choice get-selection)]))]))
+                                (set! selected-board [list-ref available-boards (send board-choice get-selection)]))]))
  
-(define (on-get-posts button event)
-  (send text insert (format "getting threads for board \"~a\" ...~n" (board->string selected-board)))
-  (define file-urls (get-all-board-file-urls selected-board))
-  (send text insert (format "got ~a total posts with files~n" (length file-urls)))
-  
-  (map (lambda (url) 
-         (send text insert url)
-         (send text insert "\n")) file-urls)
- 
-  (set! file-list file-urls))
+(define ext-choice (new choice%
+                    [label "ext "]
+                    [parent choice-panel]
+                    [choices file-extensions]
+                    [min-height 30]
+                    [callback (lambda (c e)
+                                (set! selected-ext [list-ref file-extensions (send ext-choice get-selection)])
+                                (update-filtered-posts))]))
 
-(define fetch-button (new button% 
+(define (on-get-posts b e)
+  (send text insert (format "getting all posts for board \"~a\" ...~n" (board->string selected-board)))
+  (set! posts (get-all-board-posts selected-board))
+  (send text insert (format "got ~a total posts with files~n" (length posts)))
+  (update-filtered-posts))
+
+(define (update-filtered-posts)
+  ; filtering is a two step process
+  ; 1 -> file ext
+  ; 2 -> checking if file exists (save only files that aren't already on disk)
+  (define ext-filtered
+        (filter 
+         (lambda (p) 
+           (define p-ext (post-ext p))
+           (define sxt selected-ext)
+           (cond
+             [(string-ci=? sxt "*.*") #t] ; they want all files so no actual filter
+             [(string-ci=? p-ext sxt) #t]
+             [else #f])) posts))
+  (define new-posts
+      (filter
+       (lambda (p)
+         (not (file-exists? (post->save-location p))))
+       ext-filtered))
+  (set! filtered-posts new-posts)
+  (send download-button set-label (format "download matching (~a)" (length filtered-posts))))
+
+(define (on-download-posts b e)
+  (map (lambda (p)
+         (send text insert (format "downloading file ~a...~n" (post->local-file p)))
+         ; we need to enforce a delay here to not get throttled
+         (sleep 0.025) ; 25ms
+         (download-post-file p))
+         filtered-posts)
+   (send text insert (format "done downloading ~a total new post files ~n" [length filtered-posts])))
+
+(define get-posts-button (new button% 
                           [callback on-get-posts]
                           [parent choice-panel] 
-                          [label "Get all posts"]))
+                          [label "Get all posts"]
+                          [vert-margin 5]
+                          [min-height 35]))
+
+(define download-button (new button% 
+                          [callback on-download-posts]
+                          [parent choice-panel] 
+                          [label "download (0)"]                   
+                          [vert-margin 5]
+                          [min-height 35]))
 
 (send frame show #t)

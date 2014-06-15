@@ -1,7 +1,6 @@
+#lang racket
 ; 4chan-api.rkt 
 ; simple parsing of the 4chan JSON api, see https://github.com/4chan/4chan-API
-
-#lang racket
 
 (require net/url)
 (require json)
@@ -17,10 +16,16 @@
          get-board-threads
          get-thread-posts
          get-thread-posts-with-files
+         get-all-board-posts
+         get-all-board-post-urls
          post->string
          board->string
          post->file-url
-         get-all-board-file-urls)
+         post->local-file
+         post->board
+         post->thread
+         post->boardname
+         post-ext)
 
 (define (get-url-json url)
   (string->jsexpr (port->string (get-pure-port (string->url url)))))
@@ -107,21 +112,34 @@
   (define all-posts (get-thread-posts t))
   (filter post-has-files? all-posts))
 
+; conveinance helpers since they're needed in file path creation stuff too
+(define (post->board post)
+  (board-thread-board (post-thread post)))
+
+(define (post->thread post)
+  (post-thread post))
+
+(define (post->boardname post)
+  (board-name (post->board post)))
+
 (define (post->file-url post)
   ; we need to dig out the board from the post so we can stick it in the url
-  (define thread [post-thread post])
-  (define board [board-thread-board thread])
-  (define bname [board-name board])
-  (define url [format api-image-url bname [post-tim post] [post-ext post]])
-  url)
+  (format api-image-url (post->boardname post) [post-tim post] [post-ext post]))
   
-(define (get-all-board-file-urls board)
-  (define start-seconds (current-seconds))
+(define (post->local-file post)
+  ; format is needed here because these are not strings
+  (format "~a~a" [post-tim post] [post-ext post]))
+
+(define (get-all-board-posts board)
+  ;uncomment for profiling
+  ;(define start-seconds (current-seconds))
   (define board-threads (get-board-threads board))
   (define thread-posts-list (flatten (map get-thread-posts-with-files board-threads)))
-  (define end-seconds (current-seconds))
-  (printf (format "got ~a posts in ~a seconds~n" (length thread-posts-list) (- end-seconds start-seconds)))
-  (map post->file-url thread-posts-list))
+  ;(define end-seconds (current-seconds))
+  ;(printf (format "got ~a posts in ~a seconds~n" (length thread-posts-list) (- end-seconds start-seconds)))
+  ;(map post->file-url thread-posts-list))
+  thread-posts-list)
 
-(define (test-read-all-post-files)
-  (get-all-board-file-urls (first (get-boards))))
+(define (get-all-board-post-urls board)
+  (map post->file-url get-all-board-posts))
+
