@@ -6,11 +6,12 @@
 (require "file.rkt")
 
 ; vars
-(define file-extensions '(".jpg" ".gif" ".swf" ".webm" "*.*"))
+; this is from api
+
 (define available-boards (get-boards))
 
 (define selected-board (first available-boards))
-(define selected-ext (first file-extensions))
+(define selected-ext (first api-file-exts))
 (define posts empty)
 (define filtered-posts empty)
 
@@ -62,10 +63,10 @@
 (define ext-choice (new choice%
                     [label "ext "]
                     [parent choice-panel]
-                    [choices file-extensions]
+                    [choices api-file-exts]
                     [min-height 30]
                     [callback (lambda (c e)
-                                (set! selected-ext [list-ref file-extensions (send ext-choice get-selection)])
+                                (set! selected-ext [list-ref api-file-exts (send ext-choice get-selection)])
                                 (update-filtered-posts))]))
 
 (define (on-get-posts b e)

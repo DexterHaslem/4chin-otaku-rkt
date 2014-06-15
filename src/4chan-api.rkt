@@ -11,6 +11,7 @@
 (define api-threads-url "http://a.4cdn.org/~a/threads.json") ; board
 (define api-thread-url "http://a.4cdn.org/~a/thread/~a.json") ; board thread#
 (define api-image-url "http://i.4cdn.org/~a/~a~a") ;board tim ext (dont include the dot in url, ext has it)
+(define api-file-exts '(".jpg" ".png" ".gif" ".pdf" ".swf" ".webm" "*.*"))
 
 (provide get-boards 
          get-board-threads
@@ -25,7 +26,8 @@
          post->board
          post->thread
          post->boardname
-         post-ext)
+         post-ext
+         api-file-exts)
 
 (define (get-url-json url)
   (string->jsexpr (port->string (get-pure-port (string->url url)))))
