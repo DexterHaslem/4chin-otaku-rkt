@@ -10,7 +10,10 @@
          get-board-catalog
          get-board-catalog-threadinfos
          get-board-threads
-         board-thread->string)
+         get-thread-posts
+         get-thread-posts-with-files
+         post->string)
+         ;board-thread->string)
 ;(provide [struct-out board])
 
 (define (get-url-json url)
@@ -133,15 +136,24 @@ thread json is a posts element with list of .. posts.
 ; reverse-lookup everything to poop out a final file url
 (struct post (no ext tim fsize owner-thread))
 
+(define (post->string p)
+  (format "post no=~a file=~a~a" (post-no p) (post-tim p) (post-ext p)))
+
 (define (get-thread-json board thread-no#)
   (get-url-json (format "http://a.4cdn.org/~a/thread/~a.json" [board-name board] thread-no#)))
 
 (define (post-hash->post posthash thread)
+  ; if a post doesnt have a file it will not have ext and tim and filesize so we need to be careful
   (post
    [hash-ref posthash 'no]
-   [hash-ref posthash 'tim]
-   [hash-ref posthash 'fsize]
+   (if (hash-has-key? posthash 'ext) [hash-ref posthash 'ext] "")
+   (if (hash-has-key? posthash 'tim) [hash-ref posthash 'tim] "")
+   (if (hash-has-key? posthash 'fsize) [hash-ref posthash 'fsize] 0)
    thread))
+
+; broke this down for debugging, predicate was always returning false..
+(define (post-has-files? p)
+   (> (post-fsize p) 0)); simply use file size as some garentee the other two will be present
 
 (define (get-thread-posts thread)
   (define thread-json [get-thread-json (board-thread-board thread) (board-thread-no thread)])
@@ -152,4 +164,23 @@ thread json is a posts element with list of .. posts.
       [else
        (cons [post-hash->post (first lst) thread] [iterate-posts (rest lst)])]))
    (iterate-posts posts-json))
-    
+ 
+(define (get-thread-posts-with-files t)
+  (define all-posts (get-thread-posts t))
+  (filter post-has-files? all-posts))
+
+(define (get-all-board-file-urls board)
+  (define start-seconds (current-seconds))
+  (define board-threads (get-board-threads board))
+  (define total-posts 0)
+  
+  (map (lambda (board-thread)
+         (define posts-with-files (get-thread-posts-with-files board-thread))
+         (set! total-posts (+ total-posts (length posts-with-files))))
+         board-threads)
+  
+  (define end-seconds (current-seconds))
+  (printf (format "got ~a posts in ~a seconds~n" total-posts (- end-seconds start-seconds))))
+
+(define (test-read-all-post-files)
+  (get-all-board-file-urls (first (get-boards))))

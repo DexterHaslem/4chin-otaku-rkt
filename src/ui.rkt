@@ -48,20 +48,22 @@
                                 ;(printf "selected= ~a~n" (send choice get-selection))
                                 )]))
  
-(define (on-fetch-threads button event)
+(define (on-get-posts button event)
   (send text insert (format "getting threads for board \"~a\" ...~n" (board->string selected-board)))
   ; removed catalog crap - way more verbose thread info than needed
   ; using the get-board-threads api is much faster since it just returns thread no and last modified
   (define board-threads (get-board-threads selected-board))
   (send text insert (format "got ~a threads~n" [length board-threads]))
-  (map (lambda (b)
-         (send text insert [board-thread->string b])
-         (send text insert "\n"))
+  ;(send text insert (format "got ~a total polsts~n" 
+  ;                          [foldl + 0 ))
+  (map (lambda (t)
+         (define thread-posts (get-thread-posts-with-files t))
+         (send text insert (format "got ~a posts in thread~n" (length thread-posts))))
        board-threads))
 
 (define fetch-button (new button% 
-                          [callback on-fetch-threads]
+                          [callback on-get-posts]
                           [parent choice-panel] 
-                          [label "Get threads"]))
+                          [label "Get all posts"]))
 
 (send frame show #t)
