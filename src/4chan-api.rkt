@@ -7,9 +7,10 @@
 (require json)
 
 (provide get-boards board->string 
-         get-board-catalog-list)
+         get-board-catalog-list
+         get-all-board-threads)
 (provide [struct-out board]
-         [struct-out thread])
+         [struct-out threadinfo])
 
 (define (get-url-json url)
   (string->jsexpr (port->string (get-pure-port (string->url url)))))
@@ -34,10 +35,10 @@
   (get-boards-list (hash-ref [get-boards-json] 'boards)))
 
 ; number, subject, comment, file ext, file timestamp (renamed name), replies count, imgs# count
-(struct thread (no sub com ext tim replies# imgs#) #:transparent)
+(struct threadinfo (no sub com ext tim replies# imgs#) #:transparent)
 
-(define (thread-json->thread hash)
-  (thread 
+(define (thread-json->threadinfo hash)
+  (threadinfo 
    (if (hash-has-key? hash 'no) (hash-ref hash 'no) 0)
    (if (hash-has-key? hash 'sub) (hash-ref hash 'sub) "")
    (if (hash-has-key? hash 'com) (hash-ref hash 'com) "")
@@ -46,13 +47,11 @@
    (if (hash-has-key? hash 'replies) (hash-ref hash 'replies) "")
    (if (hash-has-key? hash 'images) (hash-ref hash 'images) "")))
 
-(define (parse-page-thread thread-hash)
+(define (parse-page-threadinfo thread-hash)
   (if (hash? thread-hash)
-      (thread-json->thread thread-hash)
+      (thread-json->threadinfo thread-hash)
       'bad-thread))
 
-(struct board-catalog (board pages))
-(struct board-page (board page# threads))
 
 (define (get-catalog-json board) 
   (get-url-json (format "http://a.4cdn.org/~a/catalog.json" [board-name board])))
@@ -64,7 +63,7 @@
   
   (define (get-page-threads page-json)
     (define threads [hash-ref page-json 'threads])
-    (map parse-page-thread threads))
+    (map parse-page-threadinfo threads))
   
   (define (get-all-page-threads lst)
     (cond
@@ -73,3 +72,6 @@
        (cons (get-page-threads [first lst]) (get-all-page-threads (rest lst)))]))
   (get-all-page-threads catalog-json))
 
+; we likely have a ui / consumer that doesnt care about what page a thread is on
+(define (get-all-board-threads board)
+  (flatten (get-board-catalog-list board)))

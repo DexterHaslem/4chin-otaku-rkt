@@ -47,7 +47,6 @@
                                 (set! selected-board (list-ref available-boards (send choice get-selection)))
                                 (printf "selected= ~a~n" (send choice get-selection)))]))
 
-
 (define (debug-print-catalog lst)
   (send text insert (format "got ~a pages:~n" [length lst]))
   (map (lambda (p)
