@@ -22,29 +22,15 @@
                    [width 400]
                    [height 350]))
 
-; menu
-(define (on-menu-quit o c)
-  (send frame on-exit))
-(define menu (new menu-bar% [parent frame]))
-(define menu-file (new menu% 
-                       [label "&File"]
-                       [parent menu]))
-(new menu-item% 
-     [parent menu-file]
-     [label "Quit"]
-     [callback on-menu-quit])
 
 (define main-panel (new vertical-panel% 
                           [parent frame]
                           [alignment '(center top)]))
 
-(define debug-editor (new editor-canvas% 
-                      [parent main-panel]
+(define status-msg (new message%
+                      [parent frame]
                       [min-height 265]
-                      [label "f"]))
-
-(define text (new text%));text%))
-(send debug-editor set-editor text)
+                      [label "status"]))
 
 (define choice-panel (new horizontal-panel% 
                           [parent main-panel]
@@ -70,9 +56,9 @@
                                 (update-filtered-posts))]))
 
 (define (on-get-posts b e)
-  (send text insert (format "getting all posts for board \"~a\" ...~n" (board->string selected-board)))
+  (send status-msg set-label (format "getting all posts for board \"~a\" ...~n" (board->string selected-board)))
   (set! posts (get-all-board-posts selected-board))
-  (send text insert (format "got ~a total posts with files~n" (length posts)))
+  (send status-msg set-label (format "got ~a total posts with files~n" (length posts)))
   (update-filtered-posts))
 
 (define (update-filtered-posts)
@@ -100,10 +86,10 @@
   (map (lambda (p)
          ;(sleep 0.025) ; 25ms, no delay is needed here as long as we're still single threaded 
          (unless (file-exists? (post->save-location p))
-           (send text insert (format "downloading file ~a...~n" (post->local-file p)))
+           (send status-msg set-label (format "downloading file ~a...~n" (post->local-file p)))
            (download-post-file p)))
          filtered-posts)
-  (send text insert (format "done downloading ~a total new post files ~n" [length filtered-posts]))
+  (send status-msg set-label (format "done downloading ~a total new post files ~n" [length filtered-posts]))
   ;update filtered here so if they click again it doesnt blow up
   (update-filtered-posts))
 
