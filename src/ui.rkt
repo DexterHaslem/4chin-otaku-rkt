@@ -2,6 +2,13 @@
 
 (require "4chan-api.rkt")
 
+; vars
+(define available-boards (get-boards))
+(define selected-board (first available-boards))
+(define file-list empty)
+
+; ui
+
 (define frame (new frame% 
                    [label "debug ui"]
                    [width 500]
@@ -19,9 +26,6 @@
      [label "Quit"]
      [callback on-menu-quit])
 
-(define available-boards (get-boards))
-(define selected-board (first available-boards))
-
 (define main-panel (new vertical-panel% 
                           [parent frame]
                           [alignment '(center top)]))
@@ -31,7 +35,7 @@
                       [min-height 300]
                       [label "f"]))
 
-(define text (new text%))
+(define text (new text%));text%))
 (send debug-editor set-editor text)
 
 (define choice-panel (new horizontal-panel% 
@@ -50,7 +54,13 @@
 (define (on-get-posts button event)
   (send text insert (format "getting threads for board \"~a\" ...~n" (board->string selected-board)))
   (define file-urls (get-all-board-file-urls selected-board))
-  (send text insert (format "got ~a total posts with files~n" (length file-urls))))
+  (send text insert (format "got ~a total posts with files~n" (length file-urls)))
+  
+  (map (lambda (url) 
+         (send text insert url)
+         (send text insert "\n")) file-urls)
+ 
+  (set! file-list file-urls))
 
 (define fetch-button (new button% 
                           [callback on-get-posts]

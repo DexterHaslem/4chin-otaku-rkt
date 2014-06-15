@@ -8,9 +8,10 @@
 
 ; all the API endpoints are here in one spot for easy updating
 (define api-boards-url "http://a.4cdn.org/boards.json")
-(define api-catalog-url "http://a.4cdn.org/~a/catalog.json")
-(define api-threads-url "http://a.4cdn.org/~a/threads.json")
-(define api-thread-url "http://a.4cdn.org/~a/thread/~a.json")
+(define api-catalog-url "http://a.4cdn.org/~a/catalog.json") ; board
+(define api-threads-url "http://a.4cdn.org/~a/threads.json") ; board
+(define api-thread-url "http://a.4cdn.org/~a/thread/~a.json") ; board thread#
+(define api-image-url "http://i.4cdn.org/~a/~a~a") ;board tim ext (dont include the dot in url, ext has it)
 
 (provide get-boards 
          get-board-threads
@@ -18,6 +19,7 @@
          get-thread-posts-with-files
          post->string
          board->string
+         post->file-url
          get-all-board-file-urls)
 
 (define (get-url-json url)
@@ -70,7 +72,7 @@
 ; the post struct only contains things we care about - details to grab the file
 ; there is a reference to thread that owns it (which contains board as well) so we can
 ; reverse-lookup everything to poop out a final file url
-(struct post (no ext tim fsize owner-thread))
+(struct post (no ext tim fsize thread))
 
 (define (post->string p)
   (format "post no=~a file=~a~a" (post-no p) (post-tim p) (post-ext p)))
@@ -105,13 +107,21 @@
   (define all-posts (get-thread-posts t))
   (filter post-has-files? all-posts))
 
+(define (post->file-url post)
+  ; we need to dig out the board from the post so we can stick it in the url
+  (define thread [post-thread post])
+  (define board [board-thread-board thread])
+  (define bname [board-name board])
+  (define url [format api-image-url bname [post-tim post] [post-ext post]])
+  url)
+  
 (define (get-all-board-file-urls board)
   (define start-seconds (current-seconds))
   (define board-threads (get-board-threads board))
   (define thread-posts-list (flatten (map get-thread-posts-with-files board-threads)))
   (define end-seconds (current-seconds))
   (printf (format "got ~a posts in ~a seconds~n" (length thread-posts-list) (- end-seconds start-seconds)))
-  thread-posts-list)
+  (map post->file-url thread-posts-list))
 
 (define (test-read-all-post-files)
   (get-all-board-file-urls (first (get-boards))))
