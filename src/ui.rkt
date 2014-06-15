@@ -101,22 +101,24 @@
          (send text insert (format "downloading file ~a...~n" (post->local-file p)))
          ; we need to enforce a delay here to not get throttled
          (sleep 0.025) ; 25ms
-         (download-post-file p))
+         ; check again here in case user pressed button twice
+         (unless (file-exists? (post->save-location p))
+           (download-post-file p)))
          filtered-posts)
    (send text insert (format "done downloading ~a total new post files ~n" [length filtered-posts])))
 
 (define get-posts-button (new button% 
                           [callback on-get-posts]
                           [parent choice-panel] 
-                          [label "Get all posts"]
+                          [label "get posts"]
                           [vert-margin 5]
-                          [min-height 35]))
+                          [min-height 40]))
 
 (define download-button (new button% 
                           [callback on-download-posts]
                           [parent choice-panel] 
                           [label "download (0)"]                   
                           [vert-margin 5]
-                          [min-height 35]))
+                          [min-height 40]))
 
 (send frame show #t)
