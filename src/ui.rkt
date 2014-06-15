@@ -18,7 +18,7 @@
 ; ui
 
 (define frame (new frame% 
-                   [label "debug ui"]
+                   [label "4chin-otaku"]
                    [width 400]
                    [height 350]))
 
@@ -98,14 +98,14 @@
 
 (define (on-download-posts b e)
   (map (lambda (p)
-         (send text insert (format "downloading file ~a...~n" (post->local-file p)))
-         ; we need to enforce a delay here to not get throttled
-         (sleep 0.025) ; 25ms
-         ; check again here in case user pressed button twice
+         ;(sleep 0.025) ; 25ms, no delay is needed here as long as we're still single threaded 
          (unless (file-exists? (post->save-location p))
+           (send text insert (format "downloading file ~a...~n" (post->local-file p)))
            (download-post-file p)))
          filtered-posts)
-   (send text insert (format "done downloading ~a total new post files ~n" [length filtered-posts])))
+  (send text insert (format "done downloading ~a total new post files ~n" [length filtered-posts]))
+  ;update filtered here so if they click again it doesnt blow up
+  (update-filtered-posts))
 
 (define get-posts-button (new button% 
                           [callback on-get-posts]
