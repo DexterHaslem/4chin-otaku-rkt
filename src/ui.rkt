@@ -48,8 +48,16 @@
                                 (printf "selected= ~a~n" (send choice get-selection)))]))
 
 
+(define (debug-print-catalog lst)
+  (send text insert (format "got ~a pages:~n" [length lst]))
+  (map (lambda (p)
+         (send text insert (format "~a threads~n"  (length p)))
+         ) lst))
+ 
 (define (on-fetch-threads button event)
-  (send text insert (format "getting threads for board \"~a\"~n" (board->string selected-board))))
+  (send text insert (format "getting threads for board \"~a\" ...~n" (board->string selected-board)))
+  (define selected-board-catalog (get-board-catalog-list selected-board))
+  (debug-print-catalog selected-board-catalog))
 
 (define fetch-button (new button% 
                           [callback on-fetch-threads]
@@ -57,4 +65,3 @@
                           [label "Get threads"]))
 
 (send frame show #t)
-
