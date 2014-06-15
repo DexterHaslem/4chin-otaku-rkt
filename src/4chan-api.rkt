@@ -38,6 +38,7 @@
 ; number, subject, comment, file ext, file timestamp (renamed name), replies count, imgs# count
 (struct catalog-threadinfo (no sub com ext tim replies# imgs# owner-board) #:transparent)
 
+; todo - remove stuff we dont care about (and possibly catalogs in general)
 (define (catalog-thread-json->catalog-threadinfo hash board)
   (catalog-threadinfo 
    (if (hash-has-key? hash 'no) (hash-ref hash 'no) 0)
@@ -87,7 +88,6 @@
 
 (define (get-board-threads board)
   (define board-thread-json (get-board-threadlist-json board))
-  (define ret empty)
   ; again, list of pages with list of threads
   (define (parse-pages lst)
     (cond
@@ -129,12 +129,27 @@ thread json is a posts element with list of .. posts.
 |#
 
 ; the post struct only contains things we care about - details to grab the file
-(struct post (no ext tim fsize))
+; there is a reference to thread that owns it (which contains board as well) so we can
+; reverse-lookup everything to poop out a final file url
+(struct post (no ext tim fsize owner-thread))
 
 (define (get-thread-json board thread-no#)
   (get-url-json (format "http://a.4cdn.org/~a/thread/~a.json" [board-name board] thread-no#)))
 
-(define (get-thread-posts thread)
-  (printf "todo~n"))
+(define (post-hash->post posthash thread)
+  (post
+   [hash-ref posthash 'no]
+   [hash-ref posthash 'tim]
+   [hash-ref posthash 'fsize]
+   thread))
 
+(define (get-thread-posts thread)
+  (define thread-json [get-thread-json (board-thread-board thread) (board-thread-no thread)])
+  (define posts-json (hash-ref thread-json 'posts))
+  (define (iterate-posts lst)
+    (cond
+      [(empty? lst) empty]
+      [else
+       (cons [post-hash->post (first lst) thread] [iterate-posts (rest lst)])]))
+   (iterate-posts posts-json))
     
