@@ -12,22 +12,18 @@
 (define api-threads-url "http://a.4cdn.org/~a/threads.json")
 (define api-thread-url "http://a.4cdn.org/~a/thread/~a.json")
 
-(provide get-boards board->string
-         get-board-catalog
-         get-board-catalog-threadinfos
+(provide get-boards 
          get-board-threads
          get-thread-posts
          get-thread-posts-with-files
          post->string
+         board->string
          get-all-board-file-urls)
-         ;board-thread->string)
-;(provide [struct-out board])
 
 (define (get-url-json url)
   (string->jsexpr (port->string (get-pure-port (string->url url)))))
 
-;;http://a.4cdn.org/boards.json
-(struct board (name title) #:transparent)
+(struct board (name title))
 
 (define (board->string b)
   (format "~a / ~a" [board-name b] [board-title b]))
@@ -45,53 +41,10 @@
              (get-boards-list (rest board-json-hash)))]))
   (get-boards-list (hash-ref [get-boards-json] 'boards)))
 
-; number, subject, comment, file ext, file timestamp (renamed name), replies count, imgs# count
-(struct catalog-threadinfo (no sub com ext tim replies# imgs# owner-board) #:transparent)
-
-; todo - remove stuff we dont care about (and possibly catalogs in general)
-(define (catalog-thread-json->catalog-threadinfo hash board)
-  (catalog-threadinfo 
-   (if (hash-has-key? hash 'no) (hash-ref hash 'no) 0)
-   (if (hash-has-key? hash 'sub) (hash-ref hash 'sub) "")
-   (if (hash-has-key? hash 'com) (hash-ref hash 'com) "")
-   (if (hash-has-key? hash 'ext) (hash-ref hash 'ext) "")
-   (if (hash-has-key? hash 'tim) (hash-ref hash 'tim) "")
-   (if (hash-has-key? hash 'replies) (hash-ref hash 'replies) "")
-   (if (hash-has-key? hash 'images) (hash-ref hash 'images) ""))
-  board)
-
-(define (parse-page-threadinfo thread-hash owner-board)
-  (if (hash? thread-hash)
-      (catalog-thread-json->catalog-threadinfo thread-hash owner-board)
-      'bad-thread))
-
-(define (get-catalog-json board) 
-  (get-url-json (format api-catalog-url [board-name board])))
-
-; returns a list of lists, page - threads
-(define (get-board-catalog board)
-  (define catalog-json (get-catalog-json board))
-  ; a list of pages, and each page has a list of threads (all hashes)
-  (define (get-page-threads page-json)
-    (define threads [hash-ref page-json 'threads])
-    (map (lambda (t) 
-           (parse-page-threadinfo threads board))))
-  
-  (define (get-all-page-threads lst)
-    (cond
-      [(empty? lst) empty]
-      [else
-       (cons (get-page-threads [first lst]) (get-all-page-threads (rest lst)))]))
-  (get-all-page-threads catalog-json))
-
-; we likely have a ui / consumer that doesnt care about what page a thread is on
-(define (get-board-catalog-threadinfos catalog)
-  (flatten catalog))
-
 (define (get-board-threadlist-json board)
   (get-url-json (format api-threads-url [board-name board])))
 
-(struct board-thread (no lastmodified board) #:transparent)
+(struct board-thread (no lastmodified board))
 
 (define (board-thread->string b)
    (format "thread no#=~a last_modified=~a" [board-thread-no b] [board-thread-lastmodified b]))
@@ -113,30 +66,6 @@
                   [walk-threads (rest thread-list)])]))
        (cons (walk-threads threads) (parse-pages (rest lst)))]))
   (flatten (parse-pages board-thread-json)))
-
-;(define (test-get-board-threads)
-;  (get-board-threads (first (get-boards))))
-
-#| thread 'post' code - a thread is just a list of posts
-   each post section looks something like this:
-{
-            "no": 6326151,
-            "now": "06/14/14(Sat)17:22:51",
-            "name": "Anonymous",
-            "filename": "tumblr_n73jm0d4nH1tw0p0po1_500",
-            "ext": ".gif",
-            "w": 500,
-            "h": 250,
-            "tn_w": 125,
-            "tn_h": 62,
-            "tim": 1402780971833,
-            "time": 1402780971,
-            "md5": "pr8H7r7R8im6jenRuu+wSw==",
-            "fsize": 1098257,
-            "resto": 6326147
-        },
-thread json is a posts element with list of .. posts.
-|#
 
 ; the post struct only contains things we care about - details to grab the file
 ; there is a reference to thread that owns it (which contains board as well) so we can
@@ -179,12 +108,6 @@ thread json is a posts element with list of .. posts.
 (define (get-all-board-file-urls board)
   (define start-seconds (current-seconds))
   (define board-threads (get-board-threads board))
-;  (define total-posts 0)
-  
-;  (map (lambda (board-thread)
-;         (define posts-with-files (get-thread-posts-with-files board-thread))
-;         (set! total-posts (+ total-posts (length posts-with-files))))
-;         board-threads)
   (define thread-posts-list (flatten (map get-thread-posts-with-files board-threads)))
   (define end-seconds (current-seconds))
   (printf (format "got ~a posts in ~a seconds~n" (length thread-posts-list) (- end-seconds start-seconds)))
