@@ -12,7 +12,9 @@ It will download all post attachments that aren't already on disk. the default d
 6. If you want to later download only new posts, click 'get posts' again and the count of new files in download button should update. if it stays at 0 there were no new posts for the given file ext.
 
 Picture of usage
-![alt text](https://raw.githubusercontent.com/DexterHaslem/4chin-otaku/develop/ui_instr.png "ui pic")
+![alttxt][crappyimg]
+
+[crappyimg]: https://raw.githubusercontent.com/DexterHaslem/4chin-otaku/develop/ui_instr.png "ui pic"
 
 Yes, I know the UI sucks but it is the last thing I will do
 
