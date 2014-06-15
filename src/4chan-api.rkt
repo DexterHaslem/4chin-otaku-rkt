@@ -6,13 +6,20 @@
 (require net/url)
 (require json)
 
+; all the API endpoints are here in one spot for easy updating
+(define api-boards-url "http://a.4cdn.org/boards.json")
+(define api-catalog-url "http://a.4cdn.org/~a/catalog.json")
+(define api-threads-url "http://a.4cdn.org/~a/threads.json")
+(define api-thread-url "http://a.4cdn.org/~a/thread/~a.json")
+
 (provide get-boards board->string
          get-board-catalog
          get-board-catalog-threadinfos
          get-board-threads
          get-thread-posts
          get-thread-posts-with-files
-         post->string)
+         post->string
+         get-all-board-file-urls)
          ;board-thread->string)
 ;(provide [struct-out board])
 
@@ -26,7 +33,7 @@
   (format "~a / ~a" [board-name b] [board-title b]))
 
 (define (get-boards-json)
-  (get-url-json "http://a.4cdn.org/boards.json"))
+  (get-url-json api-boards-url))
 
 (define (get-boards)
   (define (get-boards-list board-json-hash)
@@ -59,7 +66,7 @@
       'bad-thread))
 
 (define (get-catalog-json board) 
-  (get-url-json (format "http://a.4cdn.org/~a/catalog.json" [board-name board])))
+  (get-url-json (format api-catalog-url [board-name board])))
 
 ; returns a list of lists, page - threads
 (define (get-board-catalog board)
@@ -82,7 +89,7 @@
   (flatten catalog))
 
 (define (get-board-threadlist-json board)
-  (get-url-json (format "http://a.4cdn.org/~a/threads.json" [board-name board])))
+  (get-url-json (format api-threads-url [board-name board])))
 
 (struct board-thread (no lastmodified board) #:transparent)
 
@@ -140,7 +147,7 @@ thread json is a posts element with list of .. posts.
   (format "post no=~a file=~a~a" (post-no p) (post-tim p) (post-ext p)))
 
 (define (get-thread-json board thread-no#)
-  (get-url-json (format "http://a.4cdn.org/~a/thread/~a.json" [board-name board] thread-no#)))
+  (get-url-json (format api-thread-url [board-name board] thread-no#)))
 
 (define (post-hash->post posthash thread)
   ; if a post doesnt have a file it will not have ext and tim and filesize so we need to be careful
@@ -172,15 +179,16 @@ thread json is a posts element with list of .. posts.
 (define (get-all-board-file-urls board)
   (define start-seconds (current-seconds))
   (define board-threads (get-board-threads board))
-  (define total-posts 0)
+;  (define total-posts 0)
   
-  (map (lambda (board-thread)
-         (define posts-with-files (get-thread-posts-with-files board-thread))
-         (set! total-posts (+ total-posts (length posts-with-files))))
-         board-threads)
-  
+;  (map (lambda (board-thread)
+;         (define posts-with-files (get-thread-posts-with-files board-thread))
+;         (set! total-posts (+ total-posts (length posts-with-files))))
+;         board-threads)
+  (define thread-posts-list (flatten (map get-thread-posts-with-files board-threads)))
   (define end-seconds (current-seconds))
-  (printf (format "got ~a posts in ~a seconds~n" total-posts (- end-seconds start-seconds))))
+  (printf (format "got ~a posts in ~a seconds~n" (length thread-posts-list) (- end-seconds start-seconds)))
+  thread-posts-list)
 
 (define (test-read-all-post-files)
   (get-all-board-file-urls (first (get-boards))))
