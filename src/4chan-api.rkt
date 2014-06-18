@@ -18,6 +18,7 @@
          get-thread-posts
          get-thread-posts-with-files
          get-all-board-posts
+         get-all-board-posts-mt
          get-all-board-post-urls
          post->string
          board->string
@@ -56,7 +57,7 @@
 (struct board-thread (no lastmodified board))
 
 (define (board-thread->string b)
-   (format "thread no#=~a last_modified=~a" [board-thread-no b] [board-thread-lastmodified b]))
+  (format "thread no#=~a last_modified=~a" [board-thread-no b] [board-thread-lastmodified b]))
 
 (define (get-board-threads board)
   (define board-thread-json (get-board-threadlist-json board))
@@ -98,7 +99,7 @@
 
 ; broke this down for debugging, predicate was always returning false..
 (define (post-has-files? p)
-   (> (post-fsize p) 0)); simply use file size as some garentee the other two will be present
+  (> (post-fsize p) 0)); simply use file size as some garentee the other two will be present
 
 (define (get-thread-posts thread)
   (define thread-json [get-thread-json (board-thread-board thread) (board-thread-no thread)])
@@ -108,8 +109,8 @@
       [(empty? lst) empty]
       [else
        (cons [post-hash->post (first lst) thread] [iterate-posts (rest lst)])]))
-   (iterate-posts posts-json))
- 
+  (iterate-posts posts-json))
+
 (define (get-thread-posts-with-files t)
   (define all-posts (get-thread-posts t))
   (filter post-has-files? all-posts))
@@ -127,20 +128,32 @@
 (define (post->file-url post)
   ; we need to dig out the board from the post so we can stick it in the url
   (format api-image-url (post->boardname post) [post-tim post] [post-ext post]))
-  
+
 (define (post->local-file post)
   ; format is needed here because these are not strings
   (format "~a~a" [post-tim post] [post-ext post]))
 
-(define (get-all-board-posts board)
+(define (get-all-board-posts board progress-update)
   ;uncomment for profiling
   ;(define start-seconds (current-seconds))
   (define board-threads (get-board-threads board))
-  (define thread-posts-list (flatten (map get-thread-posts-with-files board-threads)))
+  (define newposts (flatten (map (lambda (bt)
+                                   (define nbp (get-thread-posts-with-files bt))
+                                   (progress-update nbp)
+                                   nbp)
+                                 board-threads)))
+  ;(progress-update newposts)
   ;(define end-seconds (current-seconds))
   ;(printf (format "got ~a posts in ~a seconds~n" (length thread-posts-list) (- end-seconds start-seconds)))
   ;(map post->file-url thread-posts-list))
-  thread-posts-list)
+  newposts)
+
+(define (get-all-board-posts-mt board progress-update callback)
+  (thread 
+   (lambda ()
+     (define new-posts (get-all-board-posts board progress-update))
+     (callback new-posts))))
+
 
 (define (get-all-board-post-urls board)
   (map post->file-url get-all-board-posts))

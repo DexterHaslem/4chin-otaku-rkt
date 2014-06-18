@@ -4,3 +4,5 @@ src/compiled/*
 *.1
 *.dep
 *.zo
+
+*.webm
