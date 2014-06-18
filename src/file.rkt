@@ -34,8 +34,8 @@
   (define target-dir (path-only target-path))
   ;first make sure our directory exists
   (unless (directory-exists? target-dir)
-     (make-directory target-dir))
+    (make-directory target-dir))
   (download-url (post->file-url post) target-path))
- 
+
 ;(define (tdl)
 ;  (download-url "http://puu.sh/9ugod/f362c6ab47.png" "C:\\Users\\Dexter\\Pictures\\test.png"))
