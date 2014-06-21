@@ -95,17 +95,19 @@
   (send download-button set-label (format "download (~a)" filtered-count)))
 
 (define (on-download-posts b e)
-  (map (lambda (p)
-         ;(sleep 0.025) ; 25ms, no delay is needed here as long as we're still single threaded 
-         (unless (file-exists? (post->save-location p))
-           (send status-msg set-label (format "downloading file ~a...~n" (post->local-file p)))
-           (download-post-file p)
-           (sub1 filtered-count)
-           (send download-button set-label (format "download (~a)" filtered-count))))
-       filtered-posts)
-  (send status-msg set-label (format "done downloading ~a total new post files ~n" [length filtered-posts]))
-  ;update filtered here so if they click again it doesnt blow up
-  (update-filtered-posts))
+  (thread 
+   (lambda ()
+     ((map (lambda (p)
+             (unless (file-exists? (post->save-location p))
+               (sleep 0.01)
+               (send status-msg set-label (format "downloading file ~a...~n" (post->local-file p)))
+               (download-post-file p)
+               (sub1 filtered-count)
+               (queue-callback (lambda () (send download-button set-label (format "download (~a)" filtered-count))))))
+           filtered-posts)
+      (queue-callback (lambda () (send status-msg set-label (format "done downloading ~a total new post files ~n" [length filtered-posts]))))
+      ;update filtered here so if they click again it doesnt blow up
+      (update-filtered-posts)))))
 
 (define get-posts-button (new button% 
                               [callback on-get-posts]

@@ -113,6 +113,7 @@
 
 (define (get-thread-posts-with-files t)
   (define all-posts (get-thread-posts t))
+  (sleep 0.1) ; add this so we dont get hellb&
   (filter post-has-files? all-posts))
 
 ; conveinance helpers since they're needed in file path creation stuff too
